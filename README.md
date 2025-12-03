@@ -6,35 +6,7 @@
 
 > ⚠️ **Note**: This package is currently under active development and testing. Use in production at your own risk.
 
-A powerful and flexible chat system for Laravel applications with support for private conversations, group chats, real-time broadcasting, end-to-end encryption, and advanced message management.
-
-## Table of Contents
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Setup](#setup)
-- [Basic Usage](#basic-usage)
-  - [Creating Conversations](#creating-conversations)
-  - [Sending Messages](#sending-messages)
-  - [Managing Participants](#managing-participants-group-conversations)
-  - [Working with Messages](#working-with-messages)
-  - [Conversation Actions](#conversation-actions)
-  - [Fetching Conversations](#fetching-conversations)
-- [Advanced Usage](#advanced-usage)
-  - [Query Builder Methods](#query-builder-methods)
-  - [Message Filtering](#message-filtering)
-  - [Working with Different Users](#working-with-different-users)
-- [Real-time Broadcasting](#real-time-broadcasting)
-- [Encryption & Security](#encryption--security)
-- [Events](#events)
-- [API Reference](#api-reference)
-- [Configuration](#configuration)
-- [Testing](#testing)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
+A powerful and flexible chat system for Laravel applications with support for private conversations, group chats, real-time broadcasting, and advanced message management.
 
 ## Features
 
@@ -43,11 +15,7 @@ A powerful and flexible chat system for Laravel applications with support for pr
 🔔 **Real-time Broadcasting** - Built-in support for Laravel Broadcasting  
 👥 **Participant Management** - Add/remove members, assign roles (admin, moderator, member)  
 📌 **Pin & Favorite** - Pin important conversations and favorite messages  
-🔍 **Advanced Filtering** - Query conversations by status, participants, dates, and more  
 🆔 **UUID Support** - Optional UUID primary keys for conversations and messages  
-📎 **File Attachments** - Support for message attachments  
-🎯 **Read Receipts** - Track message read status  
-🔐 **End-to-End Encryption** - RSA-2048 + AES-256 encryption  
 ⚙️ **Highly Configurable** - Extensive configuration options
 
 ## Requirements
