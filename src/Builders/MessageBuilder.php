@@ -164,6 +164,16 @@ class MessageBuilder extends BelongsToMany
         return $this->orderBy("created_at", $direction);
     }
 
+    public function sentAfter(\DateTimeInterface|string $date): static
+    {
+        return $this->where($this->parseColumn("created_at"), '>', $date);
+    }
+
+    public function sentBefore(\DateTimeInterface|string $date): static
+    {
+        return $this->where($this->parseColumn("created_at"), '<', $date);
+    }
+
     protected function parseColumn(string $column): string
     {
         if (in_array($column, ['id', 'created_at', 'updated_at'])) {

@@ -1,31 +1,12 @@
 # Laravel Chat Package
 
-[![Latest Version](https://img.shields.io/packagist/v/kareemsliet/chat.svg?style=flat-square)](https://packagist.org/packages/kareemsliet/chat)
-[![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Total Downloads](https://img.shields.io/packagist/dt/kareemsliet/chat.svg?style=flat-square)](https://packagist.org/packages/kareemsliet/chat)
-
-> ⚠️ **Note**: This package is currently under active development and testing. Use in production at your own risk.
-
 A powerful and flexible chat system for Laravel applications with support for private conversations, group chats, real-time broadcasting, and advanced message management.
-
-## Features
-
-✨ **Private & Group Conversations** - Create one-on-one or group chats  
-📨 **Message Management** - Send, edit, reply to, delete, and star messages  
-🔔 **Real-time Broadcasting** - Built-in support for Laravel Broadcasting  
-👥 **Participant Management** - Add/remove members, assign roles (admin, moderator, member)  
-📌 **Pin & Favorite** - Pin important conversations and favorite messages  
-🆔 **UUID Support** - Optional UUID primary keys for conversations and messages  
-⚙️ **Highly Configurable** - Extensive configuration options
 
 ## Requirements
 
 - PHP 8.1 or higher
 - Laravel 10.x, 11.x, or 12.x
-- One of the following databases:
-  - MySQL 5.7+
-  - PostgreSQL 10+
-  - SQLite 3.8.8+
+
 
 ## Installation
 
@@ -65,22 +46,20 @@ use kareemsliet\Chat\Traits\HasParticipant;
 class User extends Authenticatable
 {
     use HasParticipant;
-    
-    // Your existing code...
 }
 ```
 
 ### 2. Participant Creation
 
-Before users can chat, they need a participant record. This is automatically handled when using the package, or you can manually create participants:
+Before users can chat, they need a participant record. This is automatically handled when using the package:
 
 ```php
-// The trait provides convenient methods
+
 $participant = $user->findOrCreateParticipant();
 
 // Check if user has a participant
 if ($user->hasParticipant()) {
-    // User can participate in conversations
+    $user->createParticipant();
 }
 ```
 
@@ -121,33 +100,41 @@ $conversation = Chat::newGroup([
 
 ### Sending Messages
 
-The `send()` method accepts three parameters:
-- **First parameter** (required): Message content (string)
-- **Second parameter** (optional): Array of attachments (default: empty array)
-- **Third parameter** (optional): Reply to message ID (default: null)
+The `sendMessage()` method accepts three parameters:
+- **Parameter 1** (required): Message content (string)
+- **Parameter 2** (optional): Array of attachments (default: empty array)
+- **Parameter 3** (optional): Reply to message - can be Message object, message ID, or null (default: null)
 
 ```php
 // Send a simple text message
-$conversation->send("Hello, how are you?");
+$conversation->sendMessage("Hello, how are you?");
 
 // Send message with attachments
-// Method signature: send(content, attachments, replyTo)
-$conversation->send(
+// Method signature: sendMessage(content, attachments, reply)
+$conversation->sendMessage(
     "Check these files",
     ['file1.pdf', 'image.jpg']
 );
 
-// Reply to a message (passing message ID as third parameter)
-$conversation->send(
+// Reply to a message using message ID (as third parameter)
+$conversation->sendMessage(
     "Thanks for the info!",
     [],              // Empty attachments array
-    $messageId       // ID of message you're replying to
+    $messageId       // Message ID you're replying to
+);
+
+// Reply to a message using Message object
+$originalMessage = $conversation->messageById($messageId);
+$conversation->sendMessage(
+    "Thanks for the info!",
+    [],
+    $originalMessage->getMessage()  // Message object
 );
 
 // Send message with both attachments and reply
-$conversation->send(
+$conversation->sendMessage(
     "Here are the updated files",
-    ['updated_file.pdf'],
+    ['updated_file.pdf', 'document.doc'],
     $messageId
 );
 
@@ -155,33 +142,108 @@ $conversation->send(
 
 ### Managing Participants (Group Conversations)
 
-```php
-// Add single participant to the group
-$conversation->addParticipant($user->participant);
+The participant management methods accept flexible parameter types:
+- Single Participant object
+- Single User model (with HasParticipant trait)
+- Array of Participants/Users
+- Collection of Participants/Users
+- Participant ID (integer/string)
+- Multiple arguments using spread operator
 
-// Add multiple participants at once
-$conversation->addParticipants([
+```php
+// ============================================
+// ADDING PARTICIPANTS
+// ============================================
+
+// Add single participant using Participant object
+$conversation->addMember($user->participant);
+
+// Add single participant using User model directly
+$conversation->addMember($user);
+
+// Add multiple participants using spread operator
+$conversation->addMember(
+    $user1->participant,
+    $user2->participant,
+    $user3->participant
+);
+
+// Add multiple participants using array
+$conversation->addMembers([
     $user1->participant,
     $user2->participant,
     $user3->participant
 ]);
 
-// Remove participants from the group (admin only)
-$conversation->removeParticipant($user->participant);
+// Add multiple users directly (without calling participant)
+$conversation->addMembers([
+    $user1,  // User model
+    $user2,  // User model
+    $user3   // User model
+]);
 
-// Remove multiple participants
-$conversation->removeParticipants([
+// Add using participant IDs
+$conversation->addMembers([1, 2, 3]);
+
+// Add using Collection
+$users = User::with("participant")->whereIn('id', [1, 2, 3])->get();
+$conversation->addMembers($users);
+
+// ============================================
+// REMOVING PARTICIPANTS
+// ============================================
+
+// Remove single participant
+$conversation->removeMember($user->participant);
+
+// Remove single user directly
+$conversation->removeMember($user);
+
+// Remove multiple participants using spread operator
+$conversation->removeMember(
+    $user1->participant,
+    $user2->participant
+);
+
+// Remove multiple participants using array
+$conversation->removeMembers([
     $user1->participant,
     $user2->participant
 ]);
 
-// Change participant role admin
-$conversation->makeAsAdmin($participant);
+// Remove using user models
+$conversation->removeMembers([$user1, $user2]);
+
+// ============================================
+// CHANGING ROLES
+// ============================================
+
+// Promote single participant to admin
+$conversation->makeAsAdmin($user->participant);
+
+// Promote multiple participants to admin (accepts same flexible types)
+$conversation->makeAsAdmin([
+    $user1->participant,
+    $user2->participant
+]);
+
+// Promote using User models directly
+$conversation->makeAsAdmin([$user1, $user2]);
+
+// Demote to member role
+$conversation->makeAsMember($user->participant);
+
+// Demote multiple participants
+$conversation->makeAsMember([$user1, $user2]);
+
+// ============================================
+// GETTING PARTICIPANTS
+// ============================================
 
 // Get all participants (active and inactive)
 $allParticipants = $conversation->participants();
 
-// Get only active participants (haven't left)
+// Get only active participants (haven't left the group)
 $activeParticipants = $conversation->activeParticipants();
 
 // Get participants who left the group
@@ -190,18 +252,63 @@ $leftParticipants = $conversation->leftParticipants();
 // Get only admin participants
 $admins = $conversation->adminParticipants();
 
+// Get participants with custom query
+$filteredParticipants = $conversation->participants(function($query) {
+    $query->where('created_at', '>', now()->subDays(7));
+});
+
+// ============================================
+// CURRENT USER ACTIONS
+// ============================================
+
 // Current user leaves the conversation
 $conversation->leave();
-
-Or 
-
-$conversation->exit()
+// OR
+$conversation->exit();
 
 // Check if current user has left
 if ($conversation->hasLeft()) {
     // User is no longer in this conversation
-    $leftDate = $conversation->leftAt();
+    $leftDate = $conversation->leftAt();  // Returns DateTime object
 }
+
+// Check current user's role
+$role = $conversation->role();  // Returns: 'admin', 'member', null (if left conversation)
+
+if ($conversation->isAdmin()) {
+    // Current user is an admin
+}
+
+if ($conversation->isMember()) {
+    // Current user is a regular member
+}
+
+// Promote current user to admin (if authorized)
+$conversation->promoteToAdmin();
+
+// Demote current user to member
+$conversation->demoteToMember();
+```
+
+#### Participant Management - Real World Examples
+
+```php
+// Example 1: Add team members to a project group
+$projectUsers = User::where('team_id', $teamId)->get();
+$conversation->addMembers($projectUsers);
+
+// Example 2: Remove inactive users from group by with()
+$inactiveUsers = User::with("participant")->where('last_active_at', '<', now()->subDays(30))->get();
+$conversation->removeMembers($inactiveUsers);
+
+// Example 3: Promote all moderators to admin
+$members = $conversation->participants(function($query) {
+    $query->members();
+});
+
+$participantIds = $members->pluck('id')->toArray();
+$conversation->makeAsAdmin($participantIds);
+
 ```
 
 ### Working with Messages
@@ -230,35 +337,115 @@ $unreadMessages = $conversation->messages(function($query) {
 // Mark all messages as read in this conversation
 $conversation->markAsRead();
 
-// Get count of unread messages
-$unreadCount = $conversation->unreadCount();
-
-// Access individual message by ID
+// Access individual message by ID (returns MessageService)
 $message = $conversation->messageById($messageId);
 
-// Work with the message object
-$message->markAsRead();           // Mark as read
-$message->star();                 // Star the message
-$message->unstar();               // Unstar the message
-$message->delete();               // Delete message
+// Or get message from Message model
+$messageModel = Message::find($id);
+$message = $conversation->message($messageModel);
+
+// ============================================
+// MESSAGE ACTIONS
+// ============================================
+
+// Mark as read (only for received messages, not sender's own messages)
+$message->markAsRead();
+
+// Star the message
+$message->star();
+
+// Unstar the message
+$message->unstar();
+
+// Toggle star status
+$message->toggleStar();
+
+// Edit message content
+$message->edit("Updated message content");
+
+// Edit message within time limit (default 1 day)
+$message->editIn("Updated content", 'hours', 2);  // Within 2 hours
+
+// Delete message for current user only
+$message->deleteForMe();
+
+// Delete message for everyone (permanent)
+$message->delete();
+
+// Delete within time limit
+$message->deleteIn('minutes', 15);  // Within 15 minutes
+$message->deleteForMeIn('hours', 24);  // Within 24 hours
+
+// ============================================
+// MESSAGE INFO
+// ============================================
 
 // Check message status
-if ($message->isRead()) {
-    // Message has been read
+if ($message->isSender()) {
+    // Current user sent this message
 }
 
 if ($message->isStarred()) {
     // Message is starred
 }
 
-if ($message->isSender()) {
-    // Current user sent this message
+// Get message details
+$messageModel = $message->getMessage();     // Returns Message model
+$sender = $message->getSender();            // Returns Participant
+$conversation = $message->getConversation(); // Returns Conversation model
+$createdAt = $message->createdAt();         // Returns DateTime
+$updatedAt = $message->updatedAt();         // Returns DateTime
+$starredAt = $message->starredAt();         // Returns DateTime or null
+$deliveredAt = $message->deliveredAt();     // Returns DateTime or null
+
+// Get message age
+$ageInDays = $message->getAgeIn('day');
+$ageInHours = $message->getAgeIn('hour');
+$ageInMinutes = $message->getAgeIn('minute');
+// Supported units: 'year', 'month', 'week', 'day', 'hour', 'minute', 'second'
+
+// ============================================
+// REPLY HANDLING
+// ============================================
+
+// Check if message has a reply
+if ($message->hasReply()) {
+    $replyMessage = $message->replyMessage();  // Returns MessageService
+    $replyContent = $replyMessage->getMessage()->content;
 }
+
+// Or get reply message model directly
+$replyMessageModel = $message->getReplyMessage();  // Returns Message model or null
+
+// ============================================
+// MESSAGE PARTICIPANTS
+// ============================================
+
+// Get all participants who received this message
+$participants = $message->participants();
+
+// Get participants who read this message
+$readBy = $message->readBy();
+
+foreach ($readBy as $participant) {
+    echo $participant->participantable->name . " read this message\n";
+}
+
+// ============================================
+// CLONE MESSAGE INSTANCE
+// ============================================
+
+// Clone the message instance
+$clonedMessage = $message->clone();
 ```
 
 ### Conversation Actions
 
 ```php
+// ============================================
+// PIN / FAVORITE ACTIONS
+// ============================================
+
 // Pin conversation to top of list
 $conversation->pin();
 
@@ -287,7 +474,11 @@ if ($conversation->isFavorited()) {
     echo "This is a favorite conversation";
 }
 
-// Update conversation details (group conversations only)
+// ============================================
+// UPDATE CONVERSATION
+// ============================================
+
+// Update conversation details (works for both private and group)
 // Method signature: update(attributes_array)
 $conversation->update([
     'title' => 'New Group Name',
@@ -295,25 +486,42 @@ $conversation->update([
     'image' => 'path/to/new/image.jpg'
 ]);
 
-// Clear all messages from conversation (soft delete)
-// Messages are hidden from your view but not permanently deleted
-$conversation->clear();
-
-// Delete conversation from your view
-// Note: In group chats, this only removes you from the conversation
-$conversation->deleteForMe();
+// ============================================
+// GET CONVERSATION INFO
+// ============================================
 
 // Get conversation details
-$title = $conversation->title();              // Group title
-$description = $conversation->description();  // Group description
-$image = $conversation->image();              // Group image
-$createdAt = $conversation->createdAt();      // Creation date
-$type = $conversation->type();                // 'private' or 'group'
+$conversationModel = $conversation->getConversation();  // Returns Conversation model
+$createdAt = $conversation->createdAt();      // Returns DateTime object
+$joinedAt = $conversation->joinedAt();        // Returns DateTime object or null
+$type = $conversation->type();                // Returns 'private' or 'group'
 
 // Check conversation type
 if ($conversation->isGroup()) {
     // This is a group conversation
 }
+
+// ============================================
+// CLEAR & DELETE
+// ============================================
+
+// Clear all messages from conversation (soft delete)
+// Messages are hidden from your view but not permanently deleted
+$conversation->clear();
+
+// Delete conversation from your view only
+// In group chats, this removes you from the conversation
+$conversation->deleteForMe();
+
+// Permanently delete conversation (admin only, deletes for everyone)
+$conversation->delete();
+
+// ============================================
+// CLONE CONVERSATION INSTANCE
+// ============================================
+
+// Clone the conversation instance
+$clonedConversation = $conversation->clone();
 ```
 
 ### Fetching Conversations
@@ -321,32 +529,135 @@ if ($conversation->isGroup()) {
 ```php
 use kareemsliet\Chat\Facades\Chat;
 
-// Get all conversations for authenticated user
-$conversations = Chat::conversations();
+// ============================================
+// GET ALL CONVERSATIONS
+// ============================================
 
-// Get conversations with custom filters
-// The callback receives a ConversationBuilder instance
-$conversations = Chat::conversations(function($query) {
-    $query->pinned()      // Only pinned conversations
-          ->active()      // User hasn't left
-          ->whereUnread() // Has unread messages
-          ->orderByLatestMessage('desc'); // Most recent first
+// Get all conversations with default sorting (pinned > joinDate > latestMessage)
+$conversations = Chat::all();
+
+// Get all conversations without default sorting
+$conversations = Chat::all(null, false);
+
+// Get all conversations with custom query and default sorting
+$conversations = Chat::all(function($query) {
+    $query->active()      // User hasn't left
+          ->whereUnread(); // Has unread messages
 });
 
-// Find specific conversation by ID
-// Returns PrivateConversation or GroupConversation instance
+// ============================================
+// SPECIALIZED CONVERSATION GETTERS
+// ============================================
+
+// Get unread conversations only
+$unread = Chat::unread();
+
+// Get unread with custom query
+$unread = Chat::unread(function($query) {
+    $query->where('created_at', '>', now()->subDays(7));
+});
+
+// Get favorited conversations only
+$favorited = Chat::favorited();
+
+// Get pinned conversations only
+$pinned = Chat::pinned();
+
+// Get conversations with a specific participant
+$conversations = Chat::withParticipant($otherUser);
+
+// With custom query and sorting
+$conversations = Chat::withParticipant($otherUser, function($query) {
+    $query->active();
+}, true); // true = use default sorting
+
+// ============================================
+// PAGINATION
+// ============================================
+
+// Paginate conversations (default 15 per page)
+$paginated = Chat::paginate();
+
+// Custom pagination with query
+$paginated = Chat::paginate(
+    20,  // Per page
+    function($query) {
+        $query->active()->whereUnread();
+    },
+    true,  // Use default sorting
+    ['page_name' => 'page', 'page' => 1]  // Pagination options
+);
+
+// ============================================
+// FIND SPECIFIC CONVERSATIONS
+// ============================================
+
+// Find conversation by ID (returns PrivateConversation or GroupConversation)
 $conversation = Chat::findById($conversationId);
 
-// Get conversation as private conversation type
+// Get as PrivateConversation instance
 $privateConversation = Chat::privateById($conversationId);
 
-// Get conversation as group conversation type
+// Get as GroupConversation instance
 $groupConversation = Chat::groupById($conversationId);
 
-// Get the other participant in a private conversation
-if (!$conversation->isGroup()) {
-    $otherUser = $conversation->otherParticipant();
-}
+// Get with Conversation model (manual instantiation)
+$conversationModel = Conversation::find($id);
+$conversation = Chat::find($conversationModel);
+$privateConv = Chat::private($conversationModel);
+$groupConv = Chat::group($conversationModel);
+```
+
+### Chat Facade - Message Methods
+
+```php
+use kareemsliet\Chat\Facades\Chat;
+
+// ============================================
+// WORKING WITH MESSAGES
+// ============================================
+
+// Get all messages for current participant
+$messages = Chat::messages();
+
+// Get messages with custom query
+$messages = Chat::messages(function($query) {
+    $query->starred()
+});
+
+// Get starred messages only
+$starredMessages = Chat::starredMessages();
+
+// Get starred messages with custom query
+$starredMessages = Chat::starredMessages(function($query) {
+    $query->sentAfter(now()->subMonth());
+});
+
+// Get specific message by ID
+$message = Chat::messageById($messageId);
+
+// Get message with Message model
+$messageModel = Message::find($id);
+$message = Chat::message($messageModel);
+
+// ============================================
+// CUSTOM MESSAGE QUERY
+// ============================================
+
+// Use messagesQuery() for complete control
+$messages = Chat::messagesQuery()->unread()->get();
+```
+
+### Chat Facade - Participant Context
+
+```php
+// Get current participant
+$participant = Chat::participant();
+
+// Work with different user contexts
+$userChat = Chat::forUser($user);
+$authChat = Chat::forAuth('admin'); // change default guard
+$participantChat = Chat::for($participant);
 ```
 
 ## Advanced Usage
@@ -356,14 +667,14 @@ if (!$conversation->isGroup()) {
 #### Conversation Filtering
 
 ```php
-Chat::conversations(function($query) {
+// Use Chat::query() to build custom conversation queries
+Chat::query(function($query) {
     // Status filters
     $query->pinned();              // Only pinned conversations
     $query->unpinned();            // Only unpinned conversations
     $query->favorited();           // Only favorited conversations
     $query->active();              // Not left
     $query->inactive();            // Left conversations
-    $query->whereUnread();         // Has unread messages
     
     // Participant filters
     $query->whereParticipant($participant); // With specific participant
@@ -371,7 +682,6 @@ Chat::conversations(function($query) {
     // Role filters (group conversations)
     $query->admins();              // Where user is admin
     $query->members();             // Where user is member
-    $query->ofRole('moderator');   // Specific role
     
     // Date filters
     $query->whereJoinedAfter('2024-01-01');
@@ -380,11 +690,8 @@ Chat::conversations(function($query) {
     
     // Sorting
     $query->orderByLatestMessage('desc');
-    $query->orderByPinned('desc');
-    $query->orderByJoinDate('desc');
-    $query->orderByCreatedAt('desc');
     
-    // Eager loading
+    // Eager loading latest message
     $query->withLatestMessageRelation();
 });
 ```
@@ -402,36 +709,12 @@ $messages = $conversation->messages(function($query) {
     $query->starred();             // Only starred messages
 });
 
-// Sender filtering
-$myMessages = $conversation->messages(function($query) {
-    $query->fromSender();          // Messages I sent
-});
-
-$othersMessages = $conversation->messages(function($query) {
-    $query->fromOthers();          // Messages from other participants
-});
 
 // Date range filtering
 $recentMessages = $conversation->messages(function($query) {
     $query->sentAfter('2024-01-01')     // After specific date
-          ->sentBefore('2024-12-31');   // Before specific date
 });
 
-// Combined filters with sorting
-$filteredMessages = $conversation->messages(function($query) {
-    $query->unread()                    // Unread only
-          ->fromOthers()                // From other users
-          ->sentAfter(now()->subDays(7)) // Last 7 days
-          ->orderBySentDate('desc');    // Newest first
-});
-
-// Using with pagination
-$paginatedMessages = $conversation->messagesPaginated(
-    20,  // 20 messages per page
-    function($query) {
-        $query->read()->orderBySentDate('desc');
-    }
-);
 ```
 
 ### Working with Different Users
@@ -583,30 +866,23 @@ return [
 
 ```
 
+## Testing
+
+> 🚧 **Testing Framework Coming Soon**
+
+We are committed to delivering a robust and reliable chat package. A comprehensive testing suite is currently under active development to ensure the highest quality standards.
+
+Thank you for your patience as we build a solid testing foundation! 🙏
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Kareemsliet/chat/issues)
 - **Source**: [GitHub Repository](https://github.com/Kareemsliet/chat)
 - **Email**: kareemoii37@gmail.com
-
-## Security
-
-If you discover any security-related issues, please email kareemoii37@gmail.com instead of using the issue tracker.
-
-## Credits
-
-- [Kareem Sliet](https://github.com/Kareemsliet)
-- [All Contributors](../../contributors)
 
 ## License
 
