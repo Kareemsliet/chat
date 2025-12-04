@@ -121,31 +121,31 @@ $conversation = Chat::newGroup([
 
 ### Sending Messages
 
-The `send()` method accepts three parameters:
+The `sendMessage()` method accepts three parameters:
 - **First parameter** (required): Message content (string)
 - **Second parameter** (optional): Array of attachments (default: empty array)
 - **Third parameter** (optional): Reply to message ID (default: null)
 
 ```php
 // Send a simple text message
-$conversation->send("Hello, how are you?");
+$conversation->sendMessage("Hello, how are you?");
 
 // Send message with attachments
-// Method signature: send(content, attachments, replyTo)
-$conversation->send(
+// Method signature: sendMessage(content, attachments, replyTo)
+$conversation->sendMessage(
     "Check these files",
     ['file1.pdf', 'image.jpg']
 );
 
 // Reply to a message (passing message ID as third parameter)
-$conversation->send(
+$conversation->sendMessage(
     "Thanks for the info!",
     [],              // Empty attachments array
     $messageId       // ID of message you're replying to
 );
 
 // Send message with both attachments and reply
-$conversation->send(
+$conversation->sendMessage(
     "Here are the updated files",
     ['updated_file.pdf'],
     $messageId
@@ -156,15 +156,16 @@ $conversation->send(
 ### Managing Participants (Group Conversations)
 
 ```php
-// Add single participant to the group
-$conversation->addParticipant($user->participant);
+// Add multiple participants or models at once
+$conversation->addMemebrs(User::findMany([1,2,3);
 
-// Add multiple participants at once
-$conversation->addParticipants([
+// Add single participant
+$conversation->addMember([
     $user1->participant,
-    $user2->participant,
-    $user3->participant
 ]);
+
+//Add single User instance
+$conversation->addMemebr(User::first());
 
 // Remove participants from the group (admin only)
 $conversation->removeParticipant($user->participant);
