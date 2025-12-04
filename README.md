@@ -171,8 +171,6 @@ $conversation->addMember(
 // Add multiple participants using array
 $conversation->addMembers([
     $user1->participant,
-    $user2->participant,
-    $user3->participant
 ]);
 
 // Add multiple users directly (without calling participant)
