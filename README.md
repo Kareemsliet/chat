@@ -7,12 +7,9 @@ Modern chat package for Laravel with private conversations, group chats, and mes
 - 💬 Private & group conversations
 - 📨 Message management (send, edit, delete, reply)
 - 🔔 Real-time broadcasting support (built-in)
-- 👥 Participant roles (admin, moderator, member)
+- 👥 Participant roles (admin, member)
 - 📌 Pin, favorite & star conversations
-- 🔐 End-to-end encryption (RSA-2048 + AES-256)
 - 🆔 UUID support
-- 📎 File attachments
-- ✅ Read receipts
 
 ## Requirements
 
